@@ -3,16 +3,7 @@ module.exports = {
   rules: {
     "no-console": 0,
     "object-curly-spacing": ["error", "always"],
-    "comma-dangle": [
-      "error",
-      {
-        arrays: "always-multiline",
-        objects: "always-multiline",
-        imports: "always-multiline",
-        exports: "always-multiline",
-        functions: "ignore",
-      },
-    ],
+    "comma-dangle": ["error", "always-multiline"],
     quotes: ["error", "backtick"],
     semi: ["error", "never"],
   },
