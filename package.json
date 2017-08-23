@@ -20,5 +20,12 @@
   "bugs": {
     "url": "https://github.com/mattdean1/contentful-text-search/issues"
   },
-  "homepage": "https://github.com/mattdean1/contentful-text-search#readme"
+  "homepage": "https://github.com/mattdean1/contentful-text-search#readme",
+  "devDependencies": {
+    "eslint": "^4.5.0",
+    "prettier": "^1.5.3"
+  },
+  "dependencies": {
+    "elasticsearch": "^13.3.1"
+  }
 }
