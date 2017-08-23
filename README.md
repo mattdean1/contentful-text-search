@@ -29,7 +29,7 @@ Contentful's search is good, but not optimised for text content. You might want 
 
 >   Get our content from Contentful
 
-Use Contentful Sync API to keep a local copy of our content in Redis. because we need all/most of our content for indexing, Redis should be faster than the Content Delivery API.
+Use the Contentful Sync API to keep a local copy of our content in Redis - because we need all/most of our content for indexing, Redis should be faster than the Content Delivery API.
 
 We re-index all our content regularly via a cron job, and keep the index up to date via Contentful webhooks in between.
 
@@ -105,7 +105,7 @@ TODO: Explore Universal highlighter in latest versions of ES
 | ES_URL              | Elasticsearch URL           | http://localhost:9200  |
 | ES_USERNAME         | Elasticsearch username      | elastic                |
 | ES_PASSWORD         | Elasticsearch password      | `none`                 |
-| ES_LOG_LEVEL        | Elasticsearch log level     | trace                  | 
+| ES_LOG_LEVEL        | Elasticsearch log level     | trace                  |
 |                     |                             |                        |
 | REDIS_URL           | Redis URL                   | redis://localhost:6379 |
 | REDIS_PASSWORD      | Redis password              | `none`                 |

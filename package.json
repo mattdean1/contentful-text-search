@@ -26,6 +26,8 @@
     "prettier": "^1.5.3"
   },
   "dependencies": {
-    "elasticsearch": "^13.3.1"
+    "contentful": "^4.6.1",
+    "elasticsearch": "^13.3.1",
+    "redis": "^2.8.0"
   }
 }
