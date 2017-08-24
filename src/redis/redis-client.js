@@ -1,5 +1,5 @@
-import redis from "redis"
-import { promisify } from "util"
+const redis = require(`redis`)
+const { promisify } = require(`util`)
 
 const client = redis.createClient(
   process.env.REDIS_URL || `redis://localhost:6379`
@@ -7,21 +7,17 @@ const client = redis.createClient(
 client.on(`error`, function(err) {
   console.log(`Redis error ` + err)
 })
-export default client
 
 /*
   Promisify some Redis operations
-  e.g. export const exampleAsync = promisify(client.example)
   now we can await client.exampleAsync
 */
 
-const promisifyAll = (obj, arr) => {
-  arr.map(prop => promisify(obj[prop]))
+module.exports = {
+  client,
+  getAsync: promisify(client.get),
+  setAsync: promisify(client.set),
+  delAsync: promisify(client.del),
+  keysAsync: promisify(client.keys),
+  mgetAsync: promisify(client.mget),
 }
-export const {
-  getAsync,
-  setAsync,
-  delAsync,
-  keysAsync,
-  mgetAsync,
-} = promisifyAll(client, [`get`, `set`, `del`, `keys`, `mget`])

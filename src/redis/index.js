@@ -1,11 +1,10 @@
-import * as client from "./redis"
+const client = require(`./redis-client`)
 
 /*
   Getter and setter for storing our contentful sync token
 */
-export const getSyncToken = async () =>
-  await client.getAsync(`contentful:synctoken`)
-export const setSyncToken = async token =>
+const getSyncToken = async () => await client.getAsync(`contentful:synctoken`)
+const setSyncToken = async token =>
   await client.setAsync(`contentful:synctoken`, token)
 
 // CRUD for single pieces of data
@@ -18,13 +17,12 @@ const removeEntry = async entry =>
 /*
   CRUD for arrays of data
 */
-export const storeEntries = async entries =>
-  await Promise.all(entries.map(storeEntry))
+const storeEntries = async entries => await Promise.all(entries.map(storeEntry))
 
-export const removeEntries = async entries =>
+const removeEntries = async entries =>
   await Promise.all(entries.map(removeEntry))
 
-export const getAllEntries = async () => {
+const getAllEntries = async () => {
   // Filter keys by our naming convention
   const entryKeys = await client.keysAsync(`contentful:entry:*`)
   return await client.mgetAsync(entryKeys)
@@ -37,5 +35,13 @@ export const getAllEntries = async () => {
 const getEntryById = async id => await client.getAsync(id)
 
 // Get a number of entries from cache by passing in an array of IDs
-export const getEntriesById = async ids =>
-  await Promise.all(ids.map(getEntryById))
+const getEntriesById = async ids => await Promise.all(ids.map(getEntryById))
+
+module.exports = {
+  getSyncToken,
+  setSyncToken,
+  storeEntries,
+  removeEntries,
+  getAllEntries,
+  getEntriesById,
+}

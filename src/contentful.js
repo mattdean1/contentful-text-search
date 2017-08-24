@@ -1,8 +1,8 @@
-import { createClient } from "contentful"
-import * as db from "./redis"
+const { createClient } = require(`contentful`)
+const db = require(`./redis`)
 
 // TODO: add try/catch and logging
-export default class ContentfulSync {
+module.exports = class Contentful {
   constructor(space, accessToken) {
     this.client = createClient({
       space,
@@ -33,7 +33,12 @@ export default class ContentfulSync {
 
   // Called before geting data from CF
   async sync() {
-    const syncToken = await db.getSyncToken()
+    // wait for initial sync to complete
+    let syncToken = `nil`
+    while (syncToken === `nil`) {
+      syncToken = await db.getSyncToken()
+    }
+
     const clientSyncResponse = await this.client.sync({
       nextSyncToken: syncToken,
       type: `Entry`,
