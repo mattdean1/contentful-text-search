@@ -31,12 +31,6 @@ Contentful's search is good, but not optimised for text content. You might want 
 
 Use the Contentful Sync API to keep a local copy of our content in Redis - because we need all/most of our content for indexing, Redis should be faster than the Content Delivery API.
 
-We re-index all our content regularly via a cron job, and keep the index up to date via Contentful webhooks in between.
-
-##### Default updates:
-
--   Cron job runs every 60 mins
--   Webhooks trigger an update when an entry is published, unpublished, or deleted
 
 ### 2. Transform
 
@@ -50,7 +44,6 @@ Here we remap Contentful fields (e.g. dereferencing, de-localising, and strippin
 -   Long text fields have their formatting stripped in case they are markdown.([https://github.com/etler/marked-plaintext](https://github.com/etler/marked-plaintext))
 
 
-
 ### 3. Index
 
 >   Get our batches of transformed data from Redis and upload them to Elasticsearch via the bulk endpoint.
@@ -61,7 +54,6 @@ At this step the transformed data is passed through our analysis chain.
 
 -   Long and short text fields are indexed as-is, and after going through a partial analyser
 -   Long text fields are also put through an english analyser
-
 
 
 ### 4. Query
@@ -88,7 +80,14 @@ Also get back highlighted text snippets with your search results, showing where 
 TODO: Explore Universal highlighter in latest versions of ES
 
 
+### 5. Keep up to date
 
+We re-index all our content regularly via a cron job, and keep the index up to date via Contentful webhooks in between.
+
+##### Default updates:
+
+-   Cron job runs every 60 mins
+-   Webhooks trigger an update when an entry is published, unpublished, or deleted
 
 
 # Setup
@@ -105,10 +104,11 @@ TODO: Explore Universal highlighter in latest versions of ES
 | ES_URL              | Elasticsearch URL           | http://localhost:9200  |
 | ES_USERNAME         | Elasticsearch username      | elastic                |
 | ES_PASSWORD         | Elasticsearch password      | `none`                 |
-| ES_LOG_LEVEL        | Elasticsearch log level     | trace                  |
 |                     |                             |                        |
 | REDIS_URL           | Redis URL                   | redis://localhost:6379 |
 | REDIS_PASSWORD      | Redis password              | `none`                 |
+|                     |                             |                        |
+| DEBUG               | Set to `true` for extra logs| false                  |
 
 
 
