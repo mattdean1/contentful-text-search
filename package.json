@@ -2,8 +2,9 @@
   "name": "contentful-text-search",
   "version": "0.0.0",
   "description": "Powerful, configurable, and extensible text search for your content",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
+    "start": "node app.js",
     "test": "echo \"Should probably write some tests!\" && exit 1"
   },
   "repository": {
@@ -26,7 +27,9 @@
     "prettier": "^1.5.3"
   },
   "dependencies": {
+    "check-env": "^1.3.0",
     "contentful": "^4.6.1",
+    "dotenv": "^4.0.0",
     "elasticsearch": "^13.3.1",
     "redis": "^2.8.0"
   }

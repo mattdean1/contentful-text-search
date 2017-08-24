@@ -106,7 +106,6 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 | ES_PASSWORD         | Elasticsearch password      | `none`                 |
 |                     |                             |                        |
 | REDIS_URL           | Redis URL                   | redis://localhost:6379 |
-| REDIS_PASSWORD      | Redis password              | `none`                 |
 |                     |                             |                        |
 | DEBUG               | Set to `true` for extra logs| false                  |
 
