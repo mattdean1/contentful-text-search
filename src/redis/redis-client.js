@@ -1,23 +1,18 @@
+const debug = require(`debug`)(`contentful-text-search:redis`)
 const redis = require(`redis`)
-const { promisify } = require(`util`)
+const bluebird = require(`bluebird`)
+
+/*
+  Promisify some Redis operations
+  now we can e.g. await client.getAsync
+*/
+bluebird.promisifyAll(redis.RedisClient.prototype)
 
 const client = redis.createClient(
   process.env.REDIS_URL || `redis://localhost:6379`
 )
 client.on(`error`, function(err) {
-  console.log(`Redis error ` + err)
+  debug(err)
 })
 
-/*
-  Promisify some Redis operations
-  now we can await client.exampleAsync
-*/
-
-module.exports = {
-  client,
-  getAsync: promisify(client.get),
-  setAsync: promisify(client.set),
-  delAsync: promisify(client.del),
-  keysAsync: promisify(client.keys),
-  mgetAsync: promisify(client.mget),
-}
+module.exports = client

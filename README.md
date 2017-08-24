@@ -107,7 +107,7 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 |                     |                             |                        |
 | REDIS_URL           | Redis URL                   | redis://localhost:6379 |
 |                     |                             |                        |
-| DEBUG               | Set to `true` for extra logs| false                  |
+| DEBUG               | See the [debug module](https://www.npmjs.com/package/debug) |                |
 
 
 
