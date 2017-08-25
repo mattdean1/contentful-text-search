@@ -1,7 +1,7 @@
 const checkEnv = require(`check-env`)
 const importEnvVars = require(`dotenv`).config
 
-const Contentful = require(`./src/contentful`)
+const Contentful = require(`contentful-sync-redis`)
 
 // Check required env vars are set
 importEnvVars()
