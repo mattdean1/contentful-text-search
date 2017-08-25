@@ -1,6 +1,8 @@
 const debug = require(`debug`)(`contentful-text-search:contentful`)
 const { createClient } = require(`contentful`)
-const db = require(`./redis`)
+
+const db = require(`../redis`)
+const { resolve, createEntriesMap } = require(`./utils`)
 
 module.exports = class Contentful {
   constructor(space, accessToken, host) {
@@ -11,6 +13,10 @@ module.exports = class Contentful {
       host: host || `cdn.contentful.com`,
     })
     this.syncToken = false
+    this.lastResolvedContent = {
+      content: false,
+      resolved: false,
+    }
   }
 
   // Get all entries from cache (making sure cache is up to date via syncing first)
@@ -56,45 +62,27 @@ module.exports = class Contentful {
     }
   }
 
-  // Recursively resolve references in an array of contentful entries
-  // TODO: add logging, should this return a promise?
-  resolve(content, entriesMap) {
-    if (!entriesMap) {
-      entriesMap = this.createEntriesMap(content)
-    }
+  // Resolve references to other entries in an array of contentful entries
+  async resolveReferences(entries) {
+    try {
+      const stringifiedContent = JSON.stringify(entries)
+      // If we already resolved links for this content, return the stored data
+      if (this.lastResolvedContent.content === stringifiedContent) {
+        debug(`Resolved entries found in cache`)
+        return this.lastResolvedContent.resolved
+      }
 
-    // content is an array
-    if (Array.isArray(content)) {
-      return content.map(x => this.resolve(x, entriesMap))
+      debug(`Resolving entries...`)
+      const entriesMap = createEntriesMap(entries)
+      const resolvedEntries = resolve(entries, entriesMap)
+      this.lastResolvedContent = {
+        content: stringifiedContent,
+        resolved: resolvedEntries,
+      }
+      return resolvedEntries
+    } catch (err) {
+      debug(`Failed resolving references for entries: %O`, entries)
+      throw new Error(err)
     }
-    // content is an entry with fields
-    if (content.sys && content.sys.type === `Entry`) {
-      Object.keys(content.fields).forEach(fieldName => {
-        // TODO: support multiple locales - group fields by locale?
-        content.fields[fieldName][`en-US`] = this.resolve(
-          content.fields[fieldName][`en-US`],
-          entriesMap
-        )
-      })
-      return content
-    }
-    // Content is a reference
-    if (
-      content.sys &&
-      content.sys.type === `Link` &&
-      content.sys.linkType === `Entry`
-    ) {
-      return this.resolve(entriesMap[content.sys.id], entriesMap)
-    }
-    // content is a value
-    return content
-  }
-
-  // create an object with content ID as keys
-  createEntriesMap(entries) {
-    return entries.reduce(
-      (accu, entry) => Object.assign(accu, { [entry.sys.id]: entry }),
-      {}
-    )
   }
 }
