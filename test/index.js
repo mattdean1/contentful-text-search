@@ -51,9 +51,7 @@ describe(`Package`, () => {
         },
       }
 
-      assert.deepEqual(transforms.removeUselessInfo([rawEntry]), [
-        transformedEntry,
-      ])
+      assert.deepEqual(transforms.reduceEntries([rawEntry]), [transformedEntry])
     })
   })
 })
