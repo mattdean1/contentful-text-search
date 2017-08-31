@@ -1,13 +1,16 @@
 const elasticsearch = require(`elasticsearch`)
 
-const conf = {
-  host: process.env.ES_URL || `http://localhost:9200`,
-  log: process.env.DEBUG === `true` ? `trace` : `info`,
+module.exports = class ElasticsearchClient {
+  constructor({ host, user, password, logLevel }) {
+    const conf = {
+      host: host || `http://localhost:9200`,
+      log: logLevel || `info`,
+    }
+    if (password) {
+      // Use authentication
+      const username = user || `elastic`
+      conf.httpAuth = `${username}:${password}`
+    }
+    this.client = new elasticsearch.Client(conf)
+  }
 }
-if (process.env.ES_PASSWORD) {
-  // Use authentication
-  const username = process.env.ES_USERNAME || `elastic`
-  conf.httpAuth = `${username}:${process.env.ES_PASSWORD}`
-}
-
-module.exports = new elasticsearch.Client(conf)
