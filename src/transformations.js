@@ -14,12 +14,11 @@ const mapEntriesToES = (entries, locale, contentTypes) => {
     const newEntry = { id: entry.id, type: entry.type }
     const fields = entry[locale]
     const { title: ctTitle, fields: ctFields } = contentTypes[entry.type]
-    const titleField = getTitleField(fields, ctTitle)
 
     Object.keys(fields).forEach(fieldName => {
       const fieldType = ctFields[fieldName].type
       const fieldValue = fields[fieldName]
-      if (fieldName === titleField) {
+      if (fieldName === ctTitle) {
         // set entry title
         newEntry.title = fieldValue
       } else if (fieldType === `Text`) {
@@ -36,13 +35,6 @@ const mapEntriesToES = (entries, locale, contentTypes) => {
 
   // remove entries with no text fields
   return newEntries.filter(entry => Object.keys(entry).length > 2)
-}
-// Contentful entry title is always mapped to a field called 'title' (unless there is a field named 'title')
-const getTitleField = (fields, ctTitle) => {
-  if (Object.keys(fields).includes(`title`)) {
-    return `title`
-  }
-  return ctTitle
 }
 
 /*
@@ -94,10 +86,13 @@ Strip contentful content types down to the barebones info
 */
 const reduceContentTypes = contentTypes => {
   const barebonesContentType = contentTypes.map(type => {
+    const fields = type.fields
+      .map(getBarebonesField)
+      .reduce(reduceArrayToObj, {})
     return {
       name: type.sys.id,
-      title: type.displayField,
-      fields: type.fields.map(getBarebonesField).reduce(reduceArrayToObj, {}),
+      title: getTitleField(Object.keys(fields), type.displayField),
+      fields,
     }
   })
   return barebonesContentType.reduce(reduceArrayToObj, {})
@@ -115,6 +110,13 @@ const reduceArrayToObj = (accumulator, obj) => {
   accumulator[obj.name] = obj
   delete accumulator[obj.name].name
   return accumulator
+}
+// Contentful entry title is always mapped to a field called 'title' (unless there is a field named 'title')
+const getTitleField = (fields, ctTitle) => {
+  if (Object.keys(fields).includes(`title`)) {
+    return `title`
+  }
+  return ctTitle
 }
 
 module.exports = {
