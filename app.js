@@ -3,6 +3,7 @@ const importEnvVars = require(`dotenv`).config
 const ContentfulSyncRedis = require(`contentful-sync-redis`)
 
 const transforms = require(`./src/transformations`)
+const indexer = require(`./src/indexing`)
 
 // Check required env vars are set
 importEnvVars()
@@ -29,12 +30,15 @@ const main = async () => {
     const contentTypes = transforms.reduceContentTypes(contentTypesResponse)
     // log(reducedContentTypes)
 
-    const mappedEntries = transforms.mapEntriesToES(
-      entries,
-      `en-US`,
-      contentTypes
-    )
-    log(mappedEntries)
+    // const mappedEntries = transforms.mapEntriesToES(
+    //   entries,
+    //   `en-US`,
+    //   contentTypes
+    // )
+    // log(mappedEntries)
+
+    // generate index mapping
+    log(indexer.createIndexConfig(contentTypes))
 
     // index
 
