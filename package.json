@@ -35,7 +35,6 @@
     "dotenv": "^4.0.0",
     "elasticsearch": "^13.3.1",
     "marked": "^0.3.6",
-    "marked-plaintext": "0.0.2",
-    "redis": "^2.8.0"
+    "marked-plaintext": "0.0.2"
   }
 }

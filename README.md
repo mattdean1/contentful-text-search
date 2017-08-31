@@ -40,7 +40,7 @@ Here we remap Contentful fields (e.g. dereferencing, de-localising, and strippin
 
 ##### Default transformations:
 
--   Contentful entry title is always mapped to a field called 'title' (unless there is a field named 'title')
+-   Contentful entry title is always mapped to a field called 'title' (unless there is a field named 'title'). Don't use long text fields / fields with markdown as the title.
 -   Long text fields have their formatting stripped in case they are markdown.([https://github.com/etler/marked-plaintext](https://github.com/etler/marked-plaintext))
 
 
@@ -94,7 +94,7 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 
 # Setup
 
-###  Environment variables
+###  Configuration
 
 | Name                | Value                       | Default                |
 | ------------------- | --------------------------- | ---------------------- |
@@ -106,8 +106,6 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 | ES_URL              | Elasticsearch URL           | http://localhost:9200  |
 | ES_USERNAME         | Elasticsearch username      | elastic                |
 | ES_PASSWORD         | Elasticsearch password      | `none`                 |
-|                     |                             |                        |
-| REDIS_URL           | Redis URL                   | redis://localhost:6379 |
 |                     |                             |                        |
 | DEBUG               | See the [debug module](https://www.npmjs.com/package/debug) |                |
 
@@ -141,17 +139,25 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 
 # Release map
 
-### MVP - 1.0
+### MVP - 0.1
 
--   Retrieve, Transform, Index, and Query with default settings
--   Keep index up to date with cron and webhooks
+-   Retrieve, Transform, Index, Query, and Update with default settings
 
-### 1.1
+### 0.2
 
 -   Add configuration options and extensibility as detailed in the Setup section
 -   Add batching via Redis, to speed things up when there are many entries
 
-### 1.2
+### 0.3
 
 -   Add autocomplete feature
 -   Add popularity feature
+
+### 1.0
+
+- Support old versions of Node using webpack
+
+
+# Contributions
+
+All contributions welcome! Please feel free to open an issue/PR :smile:
