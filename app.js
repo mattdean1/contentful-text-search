@@ -19,15 +19,24 @@ const log = obj => {
 
 const main = async () => {
   try {
-    // const entries = await cf.getEntries()
-    // const resolvedEntries = await cf.resolveReferences(entries)
-    // // todo for each locale put into a different index
-    // const transformedEntries = transforms.reduceEntries(resolvedEntries)
-    // log(transformedEntries)
-    //
+    const rawEntries = await cf.getEntries()
+    const resolvedEntries = await cf.resolveReferences(rawEntries)
+    const { items: contentTypesResponse } = await cf.client.getContentTypes()
 
-    const { items: contentTypes } = await cf.client.getContentTypes()
-    log(transforms.reduceContentTypes(contentTypes))
+    // todo for each locale put into a different index
+    const entries = transforms.reduceEntries(resolvedEntries)
+    //log(transformedEntries)
+    const contentTypes = transforms.reduceContentTypes(contentTypesResponse)
+    // log(reducedContentTypes)
+
+    const mappedEntries = transforms.mapEntriesToES(
+      entries,
+      `en-US`,
+      contentTypes
+    )
+    log(mappedEntries)
+
+    // index
 
     process.exit(0)
   } catch (err) {

@@ -1,4 +1,49 @@
 const debug = require(`debug`)(`contentful-text-search:transform`)
+const marked = require(`marked`)
+const PlainTextRenderer = require(`marked-plaintext`)
+
+const renderer = new PlainTextRenderer()
+
+// todo: test with localisation
+/*
+  Map entries to elasticsearch fields
+*/
+const mapEntriesToES = (entries, locale, contentTypes) => {
+  const newEntries = entries.map(entry => {
+    // setup data
+    const newEntry = { id: entry.id, type: entry.type }
+    const fields = entry[locale]
+    const { title: ctTitle, fields: ctFields } = contentTypes[entry.type]
+    const titleField = getTitleField(fields, ctTitle)
+
+    Object.keys(fields).forEach(fieldName => {
+      const fieldType = ctFields[fieldName].type
+      const fieldValue = fields[fieldName]
+      if (fieldName === titleField) {
+        // set entry title
+        newEntry.title = fieldValue
+      } else if (fieldType === `Text`) {
+        // convert long text fields from markdown to plaintext
+        newEntry[fieldName] = marked(fieldValue, { renderer })
+      } else if (fieldType === `Symbol`) {
+        // dont need to reformat short text fields
+        newEntry[fieldName] = fieldValue
+      }
+    })
+
+    return newEntry
+  })
+
+  // remove entries with no text fields
+  return newEntries.filter(entry => Object.keys(entry).length > 2)
+}
+// Contentful entry title is always mapped to a field called 'title' (unless there is a field named 'title')
+const getTitleField = (fields, ctTitle) => {
+  if (Object.keys(fields).includes(`title`)) {
+    return `title`
+  }
+  return ctTitle
+}
 
 /*
 Strip contentful entries down to the barebones info
@@ -47,21 +92,33 @@ const reduceEntries = entries =>
 Strip contentful content types down to the barebones info
 @param {array} contentTypes - an array of content types
 */
-const reduceContentTypes = contentTypes =>
-  contentTypes.map(type => {
+const reduceContentTypes = contentTypes => {
+  const barebonesContentType = contentTypes.map(type => {
     return {
       name: type.sys.id,
       title: type.displayField,
-      fields: type.fields.map(field => {
-        return {
-          name: field.id,
-          type: field.type,
-        }
-      }),
+      fields: type.fields.map(getBarebonesField).reduce(reduceArrayToObj, {}),
     }
   })
+  return barebonesContentType.reduce(reduceArrayToObj, {})
+}
+// Used in array.map to filter out some of the fields
+const getBarebonesField = field => {
+  return {
+    name: field.id,
+    type: field.type,
+  }
+}
+// Used in array.reduce to convert an array of objects with a name property to an object with those names as it's keys
+// e.g. [{name: `x`, field1: `y`}] => {x: { field1: `y` }}
+const reduceArrayToObj = (accumulator, obj) => {
+  accumulator[obj.name] = obj
+  delete accumulator[obj.name].name
+  return accumulator
+}
 
 module.exports = {
   reduceEntries,
   reduceContentTypes,
+  mapEntriesToES,
 }

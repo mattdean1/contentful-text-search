@@ -11,7 +11,11 @@
     "type": "git",
     "url": "git+https://github.com/mattdean1/contentful-text-search.git"
   },
-  "keywords": ["elasticsearch", "contentful", "redis"],
+  "keywords": [
+    "elasticsearch",
+    "contentful",
+    "redis"
+  ],
   "author": "Matt Dean",
   "license": "MIT",
   "bugs": {
@@ -30,6 +34,8 @@
     "debug": "^3.0.1",
     "dotenv": "^4.0.0",
     "elasticsearch": "^13.3.1",
+    "marked": "^0.3.6",
+    "marked-plaintext": "0.0.2",
     "redis": "^2.8.0"
   }
 }

@@ -34,7 +34,7 @@ Use the Contentful Sync API to keep a local copy of our content in Redis - becau
 
 ### 2. Transform
 
->   Transform Contentful data ready for indexing, then store it in Redis in batches.
+>   Transform Contentful data ready for indexing.
 
 Here we remap Contentful fields (e.g. dereferencing, de-localising, and stripping out extraneous info), and reformat some data, for example converting markdown to plain text.
 
@@ -46,7 +46,7 @@ Here we remap Contentful fields (e.g. dereferencing, de-localising, and strippin
 
 ### 3. Index
 
->   Get our batches of transformed data from Redis and upload them to Elasticsearch via the bulk endpoint.
+>  Upload our transformed data to Elasticsearch via the bulk endpoint.
 
 At this step the transformed data is passed through our analysis chain.
 
@@ -80,7 +80,9 @@ Also get back highlighted text snippets with your search results, showing where 
 TODO: Explore Universal highlighter in latest versions of ES
 
 
-### 5. Keep up to date
+### 5. Update
+
+> Automatically keep the index up to date with the latest content.
 
 We re-index all our content regularly via a cron job, and keep the index up to date via Contentful webhooks in between.
 
@@ -147,6 +149,7 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 ### 1.1
 
 -   Add configuration options and extensibility as detailed in the Setup section
+-   Add batching via Redis, to speed things up when there are many entries
 
 ### 1.2
 
