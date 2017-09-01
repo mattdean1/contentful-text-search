@@ -4,26 +4,21 @@ const PlainTextRenderer = require(`marked-plaintext`)
 
 const renderer = new PlainTextRenderer()
 
-const generatePayload = (entries, contentTypes, locale, index) => {
-  const formattedEntries = formatEntries(entries, contentTypes, locale)
+const generatePayload = (entries, locale, index) => {
   return {
     index,
-    body: mapEntriesToES(formattedEntries),
+    body: mapEntriesToES(entries, locale),
   }
 }
 
-const reduceAll = (entries, contentTypes) => {
-  return {
-    entries: reduceEntries(entries),
-    contentTypes: reduceContentTypes(contentTypes),
-  }
-}
+const reformatEntries = (entries, contentTypes, locales) =>
+  formatEntries(reduceEntries(entries), contentTypes, locales)
 
 /*
   Convert entries to ES bulk format
   @param {array} entries - an array of formatted entries
 */
-const mapEntriesToES = entries => {
+const mapEntriesToES = (entries, locale) => {
   let body = []
   entries.forEach(entry => {
     body.push({
@@ -34,7 +29,7 @@ const mapEntriesToES = entries => {
     })
     delete entry.type
     delete entry.id
-    body.push(entry)
+    body.push(entry[locale])
   })
   return body
 }
@@ -44,26 +39,30 @@ const mapEntriesToES = entries => {
   Reformat fields if necessary and bring fields to top level of object
   @param {array} entries - an array of reduced entries
 */
-const formatEntries = (entries, contentTypes, locale) => {
+const formatEntries = (entries, contentTypes, locales) => {
   const newEntries = entries.map(entry => {
     // setup data
     const newEntry = { id: entry.id, type: entry.type }
-    const fields = entry[locale]
-    const { title: ctTitle, fields: ctFields } = contentTypes[entry.type]
+    locales.forEach(localeObj => {
+      const locale = localeObj.code
+      const fields = entry[locale]
+      const { title: ctTitle, fields: ctFields } = contentTypes[entry.type]
+      newEntry[locale] = {}
 
-    Object.keys(fields).forEach(fieldName => {
-      const fieldType = ctFields[fieldName].type
-      const fieldValue = fields[fieldName]
-      if (fieldName === ctTitle) {
-        // set entry title
-        newEntry.title = fieldValue
-      } else if (fieldType === `Text`) {
-        // convert long text fields from markdown to plaintext
-        newEntry[fieldName] = marked(fieldValue, { renderer })
-      } else if (fieldType === `Symbol`) {
-        // dont need to reformat short text fields
-        newEntry[fieldName] = fieldValue
-      }
+      Object.keys(fields).forEach(fieldName => {
+        const fieldType = ctFields[fieldName].type
+        const fieldValue = fields[fieldName]
+        if (fieldName === ctTitle) {
+          // set entry title
+          newEntry[locale][`title`] = fieldValue
+        } else if (fieldType === `Text`) {
+          // convert long text fields from markdown to plaintext
+          newEntry[locale][fieldName] = marked(fieldValue, { renderer })
+        } else if (fieldType === `Symbol`) {
+          // dont need to reformat short text fields
+          newEntry[locale][fieldName] = fieldValue
+        }
+      })
     })
 
     return newEntry
@@ -157,5 +156,6 @@ const getTitleField = (fields, ctTitle) => {
 
 module.exports = {
   generatePayload,
-  reduceAll,
+  reformatEntries,
+  reduceContentTypes,
 }

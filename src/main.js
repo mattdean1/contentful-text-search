@@ -35,25 +35,25 @@ module.exports = class ContentfulTextSearch {
       const resolvedEntries = await this.contentful.resolveReferences(
         rawEntries
       )
-      const ctResponse = await this.contentful.client.getContentTypes()
+      const contentTypesResponse = await this.contentful.client.getContentTypes()
       const { locales } = await this.contentful.client.getSpace()
-      const { entries, contentTypes } = transform.reduceAll(
-        resolvedEntries,
-        ctResponse.items
+      const contentTypes = transform.reduceContentTypes(
+        contentTypesResponse.items
       )
-      return { entries, contentTypes, locales }
+      const entries = transform.reformatEntries(
+        resolvedEntries,
+        contentTypes,
+        locales
+      )
+
+      return { entries, locales, contentTypes }
     } catch (err) {
       console.log(err)
     }
   }
 
-  indexContent(entries, contentTypes, locale, index) {
-    const payload = transform.generatePayload(
-      entries,
-      contentTypes,
-      locale,
-      index
-    )
+  indexContent(entries, locale, index) {
+    const payload = transform.generatePayload(entries, locale, index)
     return this.elasticsearch.client.bulk(payload)
   }
 
@@ -87,7 +87,7 @@ module.exports = class ContentfulTextSearch {
         const locale = localeObj.code
         const index = `contentful_${this.space}_${locale.toLowerCase()}`
         await this.elasticsearch.recreateIndex(index, indexConfig)
-        await this.indexContent(entries, contentTypes, locale, index)
+        await this.indexContent(entries, locale, index)
       })
       await Promise.all(recreateIndicesAndUploadEntries)
     } catch (err) {
@@ -98,17 +98,13 @@ module.exports = class ContentfulTextSearch {
   // clear all content from the indices then re-add it
   async reindexContent() {
     try {
-      const {
-        entries,
-        contentTypes,
-        locales,
-      } = await this.getAndTransformData()
+      const { entries, locales } = await this.getAndTransformData()
       // upload entries into a different index for each locale
       const clearIndicesAndUploadEntries = locales.map(async localeObj => {
         const locale = localeObj.code
         const index = `contentful_${this.space}_${locale.toLowerCase()}`
         await this.elasticsearch.clearIndex(index)
-        await this.indexContent(entries, contentTypes, locale, index)
+        await this.indexContent(entries, locale, index)
       })
       await Promise.all(clearIndicesAndUploadEntries)
     } catch (err) {
