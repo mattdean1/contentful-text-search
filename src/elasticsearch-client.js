@@ -13,4 +13,29 @@ module.exports = class ElasticsearchClient {
     }
     this.client = new elasticsearch.Client(conf)
   }
+
+  // remove all the content in an index
+  clearIndex(index) {
+    return this.client.deleteByQuery({
+      index,
+      body: {
+        query: {
+          match_all: {},
+        },
+      },
+    })
+  }
+
+  // delete and recreate an index
+  async recreateIndex(name, indexConfig) {
+    try {
+      await this.client.indices.delete({ index: name })
+    } catch (err) {
+      // catch in case the index doesn't already exist
+    }
+    await this.client.indices.create({
+      index: name,
+      body: indexConfig,
+    })
+  }
 }

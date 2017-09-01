@@ -4,9 +4,12 @@ const PlainTextRenderer = require(`marked-plaintext`)
 
 const renderer = new PlainTextRenderer()
 
-const transform = (entries, contentTypes, locale) => {
+const generatePayload = (entries, contentTypes, locale, index) => {
   const formattedEntries = formatEntries(entries, contentTypes, locale)
-  return mapEntriesToES(formattedEntries)
+  return {
+    index,
+    body: mapEntriesToES(formattedEntries),
+  }
 }
 
 const reduceAll = (entries, contentTypes) => {
@@ -33,14 +36,12 @@ const mapEntriesToES = entries => {
     delete entry.id
     body.push(entry)
   })
-  return {
-    body,
-  }
+  return body
 }
 
 // todo: test with localisation
 /*
-  Map entries to elasticsearch fields
+  Reformat fields if necessary and bring fields to top level of object
   @param {array} entries - an array of reduced entries
 */
 const formatEntries = (entries, contentTypes, locale) => {
@@ -155,6 +156,6 @@ const getTitleField = (fields, ctTitle) => {
 }
 
 module.exports = {
-  transform,
+  generatePayload,
   reduceAll,
 }
