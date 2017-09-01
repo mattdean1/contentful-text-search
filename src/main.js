@@ -24,34 +24,39 @@ module.exports = class ContentfulTextSearch {
     })
   }
 
+  async retrieve() {
+    // retrieve from contentful
+    const rawEntries = await this.contentful.getEntries()
+    const resolvedEntries = await this.contentful.resolveReferences(rawEntries)
+    const {
+      items: contentTypesResponse,
+    } = await this.contentful.client.getContentTypes()
+    return { resolvedEntries, contentTypesResponse }
+  }
+
   // call this manually or e.g. via cron
+  // TODO: for each locale put into a different index
   async main() {
     try {
-      // retrieve from contentful
-      const rawEntries = await this.contentful.getEntries()
-      const resolvedEntries = await this.contentful.resolveReferences(
-        rawEntries
-      )
-      const {
-        items: contentTypesResponse,
-      } = await this.contentful.client.getContentTypes()
-
-      // transform ready for indexing
-      const reducedEntries = transform.reduceEntries(resolvedEntries)
+      const { resolvedEntries, contentTypesResponse } = await this.retrieve()
       const contentTypes = transform.reduceContentTypes(contentTypesResponse)
-      const entries = transform.mapEntriesToES(
-        reducedEntries,
+      const entries = transform.transform(
+        resolvedEntries,
         `en-US`,
         contentTypes
       )
-      log(entries)
 
-      // generate index mapping
-      const indexMapping = index.createIndexConfig(contentTypes)
-      log(indexMapping)
-      // next: upload to ES via .bulk
+      // generate index mapping and create index
+      const indexConfig = index.createIndexConfig(contentTypes)
+      const indexName = `testindex`
+      await this.elasticsearch.client.indices.delete({ index: indexName })
+      await this.elasticsearch.client.indices.create({
+        index: indexName,
+        body: indexConfig,
+      })
 
-      // todo for each locale put into a different index
+      // upload to ES via .bulk
+      await this.elasticsearch.client.bulk(entries)
     } catch (err) {
       console.log(err)
     }
