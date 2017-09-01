@@ -1,3 +1,5 @@
+const debug = require(`debug`)(`contentful-text-search:indexer`)
+
 const createIndexConfig = contentTypes => {
   const config = {
     settings: settings,
@@ -6,6 +8,8 @@ const createIndexConfig = contentTypes => {
   return config
 }
 
+// Generate the index field mapping for an array of content types
+// e.g. choose the analyser for short and long text fields
 const generateIndexMapping = contentTypes => {
   const mapping = {}
   Object.keys(contentTypes).forEach(ctName => {

@@ -1,8 +1,11 @@
+const debug = require(`debug`)(`contentful-text-search`)
 const ContentfulSyncRedis = require(`contentful-sync-redis`)
 const ElasticsearchClient = require(`./elasticsearch-client`)
 const transform = require(`./transform`)
-const index = require(`./indexer`)
+const indexer = require(`./indexer`)
 
+// TODO: add support for fallback locale codes
+// NOTE: should we use space name instead of ID when creating index name?
 const log = obj => {
   console.log(JSON.stringify(obj, null, 2))
 }
@@ -10,6 +13,7 @@ const log = obj => {
 module.exports = class ContentfulTextSearch {
   constructor(args) {
     const { space, token, contentfulHost, redisHost } = args
+    this.space = space
     this.contentful = new ContentfulSyncRedis({
       space,
       token,
@@ -24,39 +28,110 @@ module.exports = class ContentfulTextSearch {
     })
   }
 
-  async retrieve() {
-    // retrieve from contentful
-    const rawEntries = await this.contentful.getEntries()
-    const resolvedEntries = await this.contentful.resolveReferences(rawEntries)
-    const {
-      items: contentTypesResponse,
-    } = await this.contentful.client.getContentTypes()
-    return { resolvedEntries, contentTypesResponse }
+  // Retrieve data from contentful
+  async getAndTransformData() {
+    try {
+      const rawEntries = await this.contentful.getEntries()
+      const resolvedEntries = await this.contentful.resolveReferences(
+        rawEntries
+      )
+      const ctResponse = await this.contentful.client.getContentTypes()
+      const { locales } = await this.contentful.client.getSpace()
+      const { entries, contentTypes } = transform.reduceAll(
+        resolvedEntries,
+        ctResponse.items
+      )
+      return { entries, contentTypes, locales }
+    } catch (err) {
+      console.log(err)
+    }
   }
 
-  // call this manually or e.g. via cron
-  // TODO: for each locale put into a different index
-  async main() {
+  indexContent(entries, contentTypes, locale, index) {
+    const payload = transform.transform(entries, contentTypes, locale)
+    payload.index = index
+    return this.elasticsearch.client.bulk(payload)
+  }
+
+  // remove all the content in an index
+  clearIndex(index) {
+    return this.elasticsearch.client.deleteByQuery({
+      index,
+      body: {
+        query: {
+          match_all: {},
+        },
+      },
+    })
+  }
+
+  // delete and recreate an index
+  async recreateIndex(name, indexConfig) {
     try {
-      const { resolvedEntries, contentTypesResponse } = await this.retrieve()
-      const contentTypes = transform.reduceContentTypes(contentTypesResponse)
-      const entries = transform.transform(
-        resolvedEntries,
-        `en-US`,
-        contentTypes
-      )
+      await this.elasticsearch.client.indices.delete({ index: name })
+    } catch (err) {
+      // catch in case the index doesn't already exist
+    }
+    await this.elasticsearch.client.indices.create({
+      index: name,
+      body: indexConfig,
+    })
+  }
 
-      // generate index mapping and create index
-      const indexConfig = index.createIndexConfig(contentTypes)
-      const indexName = `testindex`
-      await this.elasticsearch.client.indices.delete({ index: indexName })
-      await this.elasticsearch.client.indices.create({
-        index: indexName,
-        body: indexConfig,
+  // delete all indices related to a contentful space
+  async deleteAllIndices() {
+    // TODO: delete contentful_space_* in case a locale is no longer in that space
+    const { locales } = await this.contentful.client.getSpace()
+    const deleteIndices = locales.map(async locale => {
+      try {
+        await this.elasticsearch.client.indices.delete({
+          index: `contentful_${this.space}_${locale.code.toLowerCase()}`,
+        })
+      } catch (err) {
+        // catch in case the index doesn't already exist
+      }
+    })
+    await Promise.all(deleteIndices)
+  }
+
+  // delete and recreate all indexes related to this contentful space
+  async fullReindex() {
+    try {
+      const {
+        entries,
+        contentTypes,
+        locales,
+      } = await this.getAndTransformData()
+      const indexConfig = indexer.createIndexConfig(contentTypes)
+      // recreate an index for each locale and upload entries into it
+      const recreateIndicesAndUploadEntries = locales.map(async localeObj => {
+        const locale = localeObj.code
+        const index = `contentful_${this.space}_${locale.toLowerCase()}`
+        await this.recreateIndex(index, indexConfig)
+        await this.indexContent(entries, contentTypes, locale, index)
       })
+      await Promise.all(recreateIndicesAndUploadEntries)
+    } catch (err) {
+      console.log(err)
+    }
+  }
 
-      // upload to ES via .bulk
-      await this.elasticsearch.client.bulk(entries)
+  // clear all content from the indexes then re-add it
+  async reindexContent() {
+    try {
+      const {
+        entries,
+        contentTypes,
+        locales,
+      } = await this.getAndTransformData()
+      // upload entries into a different index for each locale
+      const clearIndicesAndUploadEntries = locales.map(async localeObj => {
+        const locale = localeObj.code
+        const index = `contentful_${this.space}_${locale.toLowerCase()}`
+        await this.clearIndex(index)
+        await this.indexContent(entries, contentTypes, locale, index)
+      })
+      await Promise.all(clearIndicesAndUploadEntries)
     } catch (err) {
       console.log(err)
     }

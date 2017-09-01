@@ -4,31 +4,27 @@ const PlainTextRenderer = require(`marked-plaintext`)
 
 const renderer = new PlainTextRenderer()
 
-const transform = (entries, locale, contentTypes) => {
-  const reducedEntries = reduceEntries(entries)
-  const formattedEntries = formatEntries(reducedEntries, locale, contentTypes)
+const transform = (entries, contentTypes, locale) => {
+  const formattedEntries = formatEntries(entries, contentTypes, locale)
   return mapEntriesToES(formattedEntries)
 }
 
-// ES bulk format
-// {
-//   body: [
-//     {
-//       index: {
-//         _index: process.env.ES_INDEX,
-//         _type: doc.type,
-//         _id: doc.id,
-//       },
-//     },
-//     { doc },
-//   ]
-// }
+const reduceAll = (entries, contentTypes) => {
+  return {
+    entries: reduceEntries(entries),
+    contentTypes: reduceContentTypes(contentTypes),
+  }
+}
+
+/*
+  Convert entries to ES bulk format
+  @param {array} entries - an array of formatted entries
+*/
 const mapEntriesToES = entries => {
   let body = []
   entries.forEach(entry => {
     body.push({
       index: {
-        _index: `testindex`,
         _type: entry.type,
         _id: entry.id,
       },
@@ -45,8 +41,9 @@ const mapEntriesToES = entries => {
 // todo: test with localisation
 /*
   Map entries to elasticsearch fields
+  @param {array} entries - an array of reduced entries
 */
-const formatEntries = (entries, locale, contentTypes) => {
+const formatEntries = (entries, contentTypes, locale) => {
   const newEntries = entries.map(entry => {
     // setup data
     const newEntry = { id: entry.id, type: entry.type }
@@ -159,5 +156,5 @@ const getTitleField = (fields, ctTitle) => {
 
 module.exports = {
   transform,
-  reduceContentTypes,
+  reduceAll,
 }
