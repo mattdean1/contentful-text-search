@@ -23,7 +23,103 @@ Contentful's search is good, but not optimised for text content. You might want 
 -   You want to customise the relevance scoring of search results (e.g. ranking popular content higher)
 -   Your users often search using natural language or partial words, for example a user searching for 'force' would get back results for 'Salesforce' using this package)
 
+# Install
 
+```
+npm install --save contentful-text-search
+```
+
+# Usage
+
+```javascript
+const ContentfulTextSearch = require('contentful-text-search')
+const search = new ContentfulTextSearch({ space: 'space_id', token: 'access_token' })
+search.indexer.fullReindex()
+
+// later
+search.query('searchTerm', 'en-US')
+```
+
+# API
+
+## Initialisation
+
+Initialise the module using the `new` operator, passing in the mandatory values for:
+
+ - Contentful space ID
+ - Contentful access token
+
+ Optionally, also pass in:
+
+- Elasticsearch host
+  - Default: `http://localhost:9200`
+- Contentful API host
+  - Default: `cdn.contentful.com`
+- Redis URL
+  - Default: `redis://localhost:6379`
+
+- Elasticsearch user
+  - Default: `elastic`
+- Elasticsearch password
+  - Default: none
+- Elasticsearch [log level](https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/logging.html#logging-customization)
+  - Default: `info`
+
+```javascript
+const ContentfulTextSearch = require('contentful-text-search')
+const search = new ContentfulTextSearch({
+	space: 'string',
+	token: 'string',
+  elasticHost: 'optionalString',
+	contentfulHost: 'optionalString',
+	redisHost: 'optionalString',
+  elasticUser: 'optionalString',
+  elasticPassword: 'optionalString',
+  elasticLogLevel: 'optionalString'
+})
+```
+
+## Indexing
+
+Although most of the indexing functions return a promise, you should be aware that Elasticsearch is ['near real-time'](https://www.elastic.co/guide/en/elasticsearch/guide/current/near-real-time.html), so you might have to [deal with a short delay](https://stackoverflow.com/questions/31499575/how-to-deal-with-elasticsearch-index-delay) before an indexed document is available in search results.
+
+### Full Reindex
+
+Delete and recreate an index for each locale in the space, and index the content into these indices. You need to call this once to create then indices, but after that only when your content model changes.
+
+```javascript
+search.indexer.fullReindex() // returns a promise
+```
+
+### Reindex Content
+
+Clear the indices and reindex all the content from Contentful. You could use this to update the indices if they are out of date, assuming the content model hasn't changed.
+
+```javascript
+search.indexer.reindexContent() // returns a promise
+```
+
+### Delete all indices
+
+Deletes all indices related to this space. Could be used to clean up your Elasticsearch cluster after deleting a Contentful space.
+
+```javascript
+search.indexer.deleteAllIndices() // returns a promise
+```
+
+## Querying
+
+### Main query
+
+Queries the Elasticsearch index and get back search results as JSON ordered by relevance, with highlights showing where your search term appeared in the result.
+
+```javascript
+search.query(`searchTerm`, `localeCode`) // returns a promise containing the results and highlights
+```
+
+##  Logging
+
+See the [debug module](https://www.npmjs.com/package/debug). Use the package name (`contentful-text-search`) as the string in the environment variable.
 
 # What is happening?
 
@@ -51,6 +147,8 @@ Here we remap Contentful fields (e.g. dereferencing, de-localising, and strippin
 >  Upload our transformed data to Elasticsearch via the bulk endpoint.
 
 At this step the transformed data is passed through our analysis chain.
+
+The content for each locale from Contentful is uploaded to a separate index.
 
 ##### Default field analysis:
 
@@ -94,26 +192,9 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 -   Webhooks trigger an update when an entry is published, unpublished, or deleted
 
 
-# Setup
-
-###  Configuration
-
-| Name                | Value                       | Default                |
-| ------------------- | --------------------------- | ---------------------- |
-| CF_SPACE_ID         | Contentful space ID         |                        |
-| CF_ACCESS_TOKEN     | Contentful access token     |                        |
-| CF_WEBHOOK_USERNAME | Contentful webhook username |                        |
-| CF_WEBHOOK_PASSWORD | Contentful webhook password |                        |
-|                     |                             |                        |
-| ES_URL              | Elasticsearch URL           | http://localhost:9200  |
-| ES_USERNAME         | Elasticsearch username      | elastic                |
-| ES_PASSWORD         | Elasticsearch password      | `none`                 |
-|                     |                             |                        |
-| DEBUG               | See the [debug module](https://www.npmjs.com/package/debug) |                |
 
 
-
-### Optional configuration
+### TODO: Optional configuration
 
 -   Exclude content types and fields from being indexed
 
@@ -130,7 +211,7 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 
 
 
-### Optional extensibility
+### TODO: Optional extensibility
 
 -   Create a new transformation e.g. markdownToPlainText()
 -   Create a new analyser e.g. edge-ngram for instant search
@@ -139,7 +220,7 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 
 
 
-# Release map
+# Release map / Changelog
 
 ### MVP - 0.1
 

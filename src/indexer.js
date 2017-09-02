@@ -14,54 +14,6 @@ module.exports = class Indexer {
     this.queryGeneratedSinceLastIndexChange = false
   }
 
-  // Retrieve data from contentful
-  async getAndTransformData() {
-    try {
-      const resolvedEntries = await this.contentful.getResolvedEntries()
-      const contentTypesResponse = await this.contentful.client.getContentTypes()
-      const { locales } = await this.contentful.client.getSpace()
-      const contentTypes = transform.reduceContentTypes(
-        contentTypesResponse.items
-      )
-      const entries = transform.reformatEntries(
-        resolvedEntries,
-        contentTypes,
-        locales
-      )
-
-      return { entries, locales, contentTypes }
-    } catch (err) {
-      console.log(err)
-    }
-  }
-
-  async indexContent(entries, locale, index) {
-    try {
-      const payload = transform.generatePayload(entries, locale, index)
-      if (payload.body.length > 0) {
-        await this.elasticsearch.client.bulk(payload)
-      }
-    } catch (err) {
-      debug(`Could not index entries for ${locale}`)
-    }
-  }
-
-  // delete all indices related to a contentful space
-  async deleteAllIndices() {
-    // TODO: delete contentful_space_* in case a locale is no longer in that space
-    const { locales } = await this.contentful.client.getSpace()
-    const deleteIndices = locales.map(async locale => {
-      try {
-        await this.elasticsearch.client.indices.delete({
-          index: `contentful_${this.space}_${locale.code.toLowerCase()}`,
-        })
-      } catch (err) {
-        // catch in case the index doesn't exist
-      }
-    })
-    await Promise.all(deleteIndices)
-  }
-
   // delete and recreate all related indices, and reindex the content
   async fullReindex() {
     try {
@@ -98,6 +50,54 @@ module.exports = class Indexer {
       await Promise.all(clearIndicesAndUploadEntries)
     } catch (err) {
       console.log(err)
+    }
+  }
+
+  // delete all indices related to a contentful space
+  async deleteAllIndices() {
+    // TODO: delete contentful_space_* in case a locale is no longer in that space
+    const { locales } = await this.contentful.client.getSpace()
+    const deleteIndices = locales.map(async locale => {
+      try {
+        await this.elasticsearch.client.indices.delete({
+          index: `contentful_${this.space}_${locale.code.toLowerCase()}`,
+        })
+      } catch (err) {
+        // catch in case the index doesn't exist
+      }
+    })
+    await Promise.all(deleteIndices)
+  }
+
+  // Retrieve data from contentful
+  async getAndTransformData() {
+    try {
+      const resolvedEntries = await this.contentful.getResolvedEntries()
+      const contentTypesResponse = await this.contentful.client.getContentTypes()
+      const { locales } = await this.contentful.client.getSpace()
+      const contentTypes = transform.reduceContentTypes(
+        contentTypesResponse.items
+      )
+      const entries = transform.reformatEntries(
+        resolvedEntries,
+        contentTypes,
+        locales
+      )
+
+      return { entries, locales, contentTypes }
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
+  async indexContent(entries, locale, index) {
+    try {
+      const payload = transform.generatePayload(entries, locale, index)
+      if (payload.body.length > 0) {
+        await this.elasticsearch.client.bulk(payload)
+      }
+    } catch (err) {
+      debug(`Could not index entries for ${locale}`)
     }
   }
 }
