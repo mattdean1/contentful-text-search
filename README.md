@@ -51,28 +51,21 @@ Initialise the module using the `new` operator, passing in the mandatory values 
 
  Optionally, also pass in:
 
-- Elasticsearch host
-  - Default: `http://localhost:9200`
-- Contentful API host
-  - Default: `cdn.contentful.com`
-- Redis URL
-  - Default: `redis://localhost:6379`
-
-- Elasticsearch user
-  - Default: `elastic`
-- Elasticsearch password
-  - Default: none
-- Elasticsearch [log level](https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/logging.html#logging-customization)
-  - Default: `info`
+- Elasticsearch host - Default: `http://localhost:9200`
+- Contentful API host - Default: `cdn.contentful.com`
+- Redis URL - Default: `redis://localhost:6379`
+- Elasticsearch username - Default: `elastic`
+- Elasticsearch password - Default: none
+- Elasticsearch [log level](https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/current/logging.html#logging-customization) - Default: `info`
 
 ```javascript
 const ContentfulTextSearch = require('contentful-text-search')
 const search = new ContentfulTextSearch({
-	space: 'string',
-	token: 'string',
+  space: 'string',
+  token: 'string',
   elasticHost: 'optionalString',
-	contentfulHost: 'optionalString',
-	redisHost: 'optionalString',
+  contentfulHost: 'optionalString',
+  redisHost: 'optionalString',
   elasticUser: 'optionalString',
   elasticPassword: 'optionalString',
   elasticLogLevel: 'optionalString'
@@ -85,7 +78,7 @@ Although most of the indexing functions return a promise, you should be aware th
 
 ### Full Reindex
 
-Delete and recreate an index for each locale in the space, and index the content into these indices. You need to call this once to create then indices, but after that only when your content model changes.
+Delete and recreate an index for each locale in the space, and index the content into these indices. You need to call this the first time you use the module, but after that only when your content model changes.
 
 ```javascript
 search.indexer.fullReindex() // returns a promise
@@ -93,7 +86,7 @@ search.indexer.fullReindex() // returns a promise
 
 ### Reindex Content
 
-Clear the indices and reindex all the content from Contentful. You could use this to update the indices if they are out of date, assuming the content model hasn't changed.
+Clear the indices and reindex all the content from Contentful. You can use this to update the indices if they are out of date, assuming the content model hasn't changed.
 
 ```javascript
 search.indexer.reindexContent() // returns a promise
@@ -123,16 +116,12 @@ See the [debug module](https://www.npmjs.com/package/debug). Use the package nam
 
 # What is happening?
 
-### 1. Retrieve
-
->   Get our content from Contentful
+## 1. Retrieve - Get our content from Contentful
 
 Use the Contentful Sync API to keep a local copy of our content in Redis - because we need all/most of our content for indexing, Redis should be faster than the Content Delivery API.
 
 
-### 2. Transform
-
->   Transform Contentful data ready for indexing.
+## 2. Transform - Transform Contentful data ready for indexing.
 
 Here we remap Contentful fields (e.g. dereferencing, de-localising, and stripping out extraneous info), and reformat some data, for example converting markdown to plain text.
 
@@ -142,9 +131,7 @@ Here we remap Contentful fields (e.g. dereferencing, de-localising, and strippin
 -   Long text fields have their formatting stripped in case they are markdown. (Using [marked-plaintext](https://github.com/etler/marked-plaintext))
 
 
-### 3. Index
-
->  Upload our transformed data to Elasticsearch via the bulk endpoint.
+## 3. Index - Upload our transformed data to Elasticsearch via the bulk endpoint.
 
 At this step the transformed data is passed through our analysis chain.
 
@@ -156,9 +143,7 @@ The content for each locale from Contentful is uploaded to a separate index.
 -   Long text fields are also put through a [local language analyser](https://www.elastic.co/guide/en/elasticsearch/reference/5.5/analysis-lang-analyzer.html), i.e. `english` analyser for English content or `german` analyser for German content.
 
 
-### 4. Query
-
->   Search our Elasticsearch index!
+## 4. Query - Search our Elasticsearch index!
 
 #### Main query
 
@@ -180,9 +165,7 @@ Also get back highlighted text snippets with your search results, showing where 
 TODO: Explore Universal highlighter in latest versions of ES
 
 
-### 5. Update
-
-> Automatically keep the index up to date with the latest content.
+## 5. Update - Automatically keep the index up to date with the latest content.
 
 We re-index all our content regularly via a cron job, and keep the index up to date via Contentful webhooks in between.
 
@@ -194,24 +177,21 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 
 
 
-### TODO: Optional configuration
+
+
+
+
+# Optional Extensibility and Configuration
+
+### Configuration
 
 -   Exclude content types and fields from being indexed
-
-
--   Change which field maps to `title` in Elasticsearch (the entry title by default)
-
-
 -   Specify the transformation and analyser for each field
-
-
 
 -   Exclude fields from query
 -   Boost fields in query
 
-
-
-### TODO: Optional extensibility
+### Extensibility
 
 -   Create a new transformation e.g. markdownToPlainText()
 -   Create a new analyser e.g. edge-ngram for instant search
@@ -224,14 +204,18 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 
 ### MVP - 0.1
 
--   Retrieve, Transform, Index, Query, and Update with default settings
+-   Localised Retrieve, Transform, Index, and Query with default settings
 
 ### 0.2
+
+- Update index automatically
+
+### 0.3
 
 -   Add configuration options and extensibility as detailed in the Setup section
 -   Add batching via Redis, to speed things up when there are many entries
 
-### 0.3
+### 0.4
 
 -   Add autocomplete feature
 -   Add popularity feature
