@@ -14,7 +14,10 @@ const log = obj => {
 const cts = new ContentfulTextSearch({
   space: process.env.CF_SPACE_ID,
   token: process.env.CF_ACCESS_TOKEN,
-  elasticLogLevel: `trace`,
+  elasticLogLevel: `info`,
 })
 
-cts.indexer.fullReindex()
+// cts.indexer.fullReindex().then(() => {
+//   cts.query(`intro`, `en-US`)
+// })
+cts.query(`intro`, `en-US`)

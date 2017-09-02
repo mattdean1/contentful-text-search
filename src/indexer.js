@@ -1,11 +1,13 @@
 const debug = require(`debug`)(`contentful-text-search:indexer`)
 const transform = require(`./transform`)
+const config = require(`./index-config`)
 
 module.exports = class Indexer {
   constructor(space, contentfulClient, elasticsearchClient) {
     this.space = space
     this.contentful = contentfulClient
     this.elasticsearch = elasticsearchClient
+    this.queryGeneratedSinceLastIndexChange = false
   }
 
   // Retrieve data from contentful
@@ -58,7 +60,7 @@ module.exports = class Indexer {
         contentTypes,
         locales,
       } = await this.getAndTransformData()
-      const indexConfig = createIndexConfig(contentTypes)
+      const indexConfig = config.createIndexConfig(contentTypes)
       // recreate an index for each locale and upload entries into it
       const recreateIndicesAndUploadEntries = locales.map(async localeObj => {
         const locale = localeObj.code
@@ -88,90 +90,4 @@ module.exports = class Indexer {
       console.log(err)
     }
   }
-}
-
-const createIndexConfig = contentTypes => {
-  const config = {
-    settings: settings,
-  }
-  config.mappings = generateIndexMapping(contentTypes)
-  return config
-}
-
-// Generate the index field mapping for an array of content types
-// e.g. choose the analyser for short and long text fields
-const generateIndexMapping = contentTypes => {
-  const mapping = {}
-  Object.keys(contentTypes).forEach(ctName => {
-    mapping[ctName] = {
-      properties: {
-        id: { type: `keyword` },
-        title: shortTextField,
-      },
-    }
-    const contentType = contentTypes[ctName]
-    Object.keys(contentType.fields).forEach(fieldName => {
-      const fieldType = contentType.fields[fieldName].type
-      if (fieldName === contentType.title) {
-        // don't add the field
-      } else if (fieldType === `Text`) {
-        // add long text
-        mapping[ctName][`properties`][fieldName] = longTextField
-      } else if (fieldType === `Symbol`) {
-        // add short text
-        mapping[ctName][`properties`][fieldName] = shortTextField
-      }
-    })
-  })
-  return mapping
-}
-
-const settings = {
-  analysis: {
-    tokenizer: {
-      partial_word_tokenizer: {
-        type: `ngram`,
-        min_gram: 4,
-        max_gram: 10,
-        token_chars: [`letter`, `digit`, `punctuation`],
-      },
-    },
-    analyzer: {
-      partial_word: {
-        type: `custom`,
-        tokenizer: `partial_word_tokenizer`,
-        filter: [`lowercase`],
-      },
-    },
-  },
-}
-
-const shortTextField = {
-  type: `text`,
-  fields: {
-    partial: {
-      type: `text`,
-      analyzer: `partial_word`,
-      search_analyzer: `simple`,
-      term_vector: `with_positions_offsets`,
-    },
-  },
-}
-
-const longTextField = {
-  type: `text`,
-  term_vector: `with_positions_offsets`,
-  fields: {
-    partial: {
-      type: `text`,
-      analyzer: `partial_word`,
-      search_analyzer: `simple`,
-      term_vector: `with_positions_offsets`,
-    },
-    english: {
-      term_vector: `with_positions_offsets`,
-      type: `text`,
-      analyzer: `english`,
-    },
-  },
 }
