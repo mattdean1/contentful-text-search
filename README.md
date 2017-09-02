@@ -208,7 +208,6 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 
 ### 0.2
 
-- More logging and testing
 - Update index automatically
 
 ### 0.3
