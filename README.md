@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/mattdean1/contentful-text-search.svg?branch=master)](https://travis-ci.org/mattdean1/contentful-text-search)
+
 # contentful-text-search
 
 >    Powerful, configurable, and extensible text search for your content.
@@ -10,7 +12,7 @@
 -   Store this in Elasticsearch, and **automatically keep it up to date**
 -   **Generate a query** with out-of-the-box support for:
     -   Partial word matching
-    -   Natural Language queries
+    -   Localised natural language queries
     -   Result highlighting
 
 #### Why wouldn't I use the Contentful Search API?
@@ -19,7 +21,7 @@ Contentful's search is good, but not optimised for text content. You might want 
 
 -   You have a lot of content and it is important for users to find the right piece (increasing precision of search results)
 -   You want to customise the relevance scoring of search results (e.g. ranking popular content higher)
--   Your users often search using natural language or partial words, for example e.g. a user searching for 'force' would get back results for 'Salesforce' using this package)
+-   Your users often search using natural language or partial words, for example a user searching for 'force' would get back results for 'Salesforce' using this package)
 
 
 
