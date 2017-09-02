@@ -8,6 +8,8 @@ exports.createIndexConfig = (contentTypes, locale) => {
 
 exports.generateQuery = contentTypes => {
   let fields = [`title`, `title.partial`]
+  let highlightFields = {}
+  shortTextFieldHighlight(highlightFields, `title`)
   Object.keys(contentTypes).forEach(ctName => {
     const contentType = contentTypes[ctName]
     Object.keys(contentType.fields).forEach(fieldName => {
@@ -19,15 +21,23 @@ exports.generateQuery = contentTypes => {
         shortTextFieldQuery(fieldName).forEach(field => {
           fields.push(field)
         })
+        shortTextFieldHighlight(highlightFields, fieldName)
       } else if (type === `Text`) {
         // long text field
         longTextFieldQuery(fieldName).forEach(field => {
           fields.push(field)
         })
+        longTextFieldHighlight(highlightFields, fieldName)
       }
     })
   })
   const query = {
+    highlight: {
+      order: `score`,
+      pre_tags: [`<strong>`],
+      post_tags: [`</strong>`],
+      fields: highlightFields,
+    },
     query: {
       bool: {
         must: [
@@ -104,6 +114,11 @@ const shortTextField = {
   },
 }
 const shortTextFieldQuery = fieldName => [fieldName, `${fieldName}.partial`]
+const shortTextFieldHighlight = (highlightObj, fieldName) => {
+  const field = { number_of_fragments: 0 }
+  highlightObj[fieldName] = field
+  highlightObj[`${fieldName}.partial`] = field
+}
 
 const longTextField = locale => {
   return {
@@ -129,6 +144,13 @@ const longTextFieldQuery = fieldName => [
   `${fieldName}.partial`,
   `${fieldName}.localised`,
 ]
+const longTextFieldHighlight = (highlightObj, fieldName) => {
+  highlightObj[fieldName] = {
+    number_of_fragments: 3,
+    type: `fvh`,
+    matched_fields: [`${fieldName}.localised`, `${fieldName}.partial`],
+  }
+}
 
 // convert a locale code from contentful into the analyzer name we need to use in elasticsearch
 const localeToAnalyzer = localeCode => {
