@@ -41,7 +41,7 @@ Here we remap Contentful fields (e.g. dereferencing, de-localising, and strippin
 ##### Default transformations:
 
 -   Contentful entry title is always mapped to a field called 'title' (unless there is a field named 'title'). Don't use long text fields / fields with markdown as the title.
--   Long text fields have their formatting stripped in case they are markdown.([https://github.com/etler/marked-plaintext](https://github.com/etler/marked-plaintext))
+-   Long text fields have their formatting stripped in case they are markdown. (Using [marked-plaintext](https://github.com/etler/marked-plaintext))
 
 
 ### 3. Index
@@ -53,7 +53,7 @@ At this step the transformed data is passed through our analysis chain.
 ##### Default field analysis:
 
 -   Long and short text fields are indexed as-is, and after going through a partial analyser
--   Long text fields are also put through an english analyser
+-   Long text fields are also put through a [local language analyser](https://www.elastic.co/guide/en/elasticsearch/reference/5.5/analysis-lang-analyzer.html), i.e. `english` analyser for English content or `german` analyser for German content.
 
 
 ### 4. Query
@@ -66,7 +66,7 @@ Send a string and get back search results as JSON ordered by relevance
 
 ##### Default query:
 
--   Cross-fields multi-match on all fields
+-   `best_fields` [multi-match](https://www.elastic.co/guide/en/elasticsearch/reference/5.5/query-dsl-multi-match-query.html#type-best-fields) on all fields
 
 #### Highlighting
 
@@ -74,7 +74,7 @@ Also get back highlighted text snippets with your search results, showing where 
 
 ##### Default highlighting:
 
--   FVH for speed on partial and english long text
+-   FVH for speed on partial and localised long text
 -   Regular on partial short text
 
 TODO: Explore Universal highlighter in latest versions of ES

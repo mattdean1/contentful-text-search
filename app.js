@@ -20,4 +20,4 @@ const cts = new ContentfulTextSearch({
 // cts.indexer.fullReindex().then(() => {
 //   cts.query(`intro`, `en-US`)
 // })
-cts.query(`intro`, `en-US`)
+cts.query(`accel`, `en-US`)
