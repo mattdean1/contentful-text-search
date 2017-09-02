@@ -36,7 +36,6 @@ module.exports = class ContentfulTextSearch {
     const contentTypes = transform.reduceContentTypes(
       contentTypesResponse.items
     )
-    log(contentTypes)
     this.generatedQuery = config.generateQuery(contentTypes)
     this.indexer.queryGeneratedSinceLastIndexChange = true
   }

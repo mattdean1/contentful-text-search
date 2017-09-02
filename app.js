@@ -14,7 +14,7 @@ const log = obj => {
 const cts = new ContentfulTextSearch({
   space: process.env.CF_SPACE_ID,
   token: process.env.CF_ACCESS_TOKEN,
-  elasticLogLevel: `info`,
+  elasticLogLevel: `trace`,
 })
 
 // cts.indexer.fullReindex().then(() => {

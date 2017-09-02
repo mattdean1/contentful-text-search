@@ -60,11 +60,11 @@ module.exports = class Indexer {
         contentTypes,
         locales,
       } = await this.getAndTransformData()
-      const indexConfig = config.createIndexConfig(contentTypes)
       // recreate an index for each locale and upload entries into it
       const recreateIndicesAndUploadEntries = locales.map(async localeObj => {
         const locale = localeObj.code
         const index = `contentful_${this.space}_${locale.toLowerCase()}`
+        const indexConfig = config.createIndexConfig(contentTypes, locale)
         await this.elasticsearch.recreateIndex(index, indexConfig)
         await this.indexContent(entries, locale, index)
       })
