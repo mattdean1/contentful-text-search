@@ -2,6 +2,10 @@ const debug = require(`debug`)(`contentful-text-search:indexer`)
 const transform = require(`./transform`)
 const config = require(`./index-config`)
 
+const log = obj => {
+  console.log(JSON.stringify(obj, null, 2))
+}
+
 module.exports = class Indexer {
   constructor(space, contentfulClient, elasticsearchClient) {
     this.space = space
@@ -31,9 +35,15 @@ module.exports = class Indexer {
     }
   }
 
-  indexContent(entries, locale, index) {
-    const payload = transform.generatePayload(entries, locale, index)
-    return this.elasticsearch.client.bulk(payload)
+  async indexContent(entries, locale, index) {
+    try {
+      const payload = transform.generatePayload(entries, locale, index)
+      if (payload.body.length > 0) {
+        await this.elasticsearch.client.bulk(payload)
+      }
+    } catch (err) {
+      debug(`Could not index entries for ${locale}`)
+    }
   }
 
   // delete all indices related to a contentful space

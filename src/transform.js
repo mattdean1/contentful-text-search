@@ -21,20 +21,21 @@ const reformatEntries = (entries, contentTypes, locales) =>
 const mapEntriesToES = (entries, locale) => {
   let body = []
   entries.forEach(entry => {
-    body.push({
-      index: {
-        _type: entry.type,
-        _id: entry.id,
-      },
-    })
-    delete entry.type
-    delete entry.id
-    body.push(entry[locale])
+    if (entry[locale]) {
+      body.push({
+        index: {
+          _type: entry.type,
+          _id: entry.id,
+        },
+      })
+      delete entry.type
+      delete entry.id
+      body.push(entry[locale])
+    }
   })
   return body
 }
 
-// todo: test with localisation
 /*
   Reformat fields if necessary and bring fields to top level of object
   @param {array} entries - an array of reduced entries
@@ -46,23 +47,26 @@ const formatEntries = (entries, contentTypes, locales) => {
     locales.forEach(localeObj => {
       const locale = localeObj.code
       const fields = entry[locale]
-      const { title: ctTitle, fields: ctFields } = contentTypes[entry.type]
-      newEntry[locale] = {}
+      if (fields) {
+        // continue if this field contains content for this locale
+        const { title: ctTitle, fields: ctFields } = contentTypes[entry.type]
+        newEntry[locale] = {}
 
-      Object.keys(fields).forEach(fieldName => {
-        const fieldType = ctFields[fieldName].type
-        const fieldValue = fields[fieldName]
-        if (fieldName === ctTitle) {
-          // set entry title
-          newEntry[locale][`title`] = fieldValue
-        } else if (fieldType === `Text`) {
-          // convert long text fields from markdown to plaintext
-          newEntry[locale][fieldName] = marked(fieldValue, { renderer })
-        } else if (fieldType === `Symbol`) {
-          // dont need to reformat short text fields
-          newEntry[locale][fieldName] = fieldValue
-        }
-      })
+        Object.keys(fields).forEach(fieldName => {
+          const fieldType = ctFields[fieldName].type
+          const fieldValue = fields[fieldName]
+          if (fieldName === ctTitle) {
+            // set entry title
+            newEntry[locale][`title`] = fieldValue
+          } else if (fieldType === `Text`) {
+            // convert long text fields from markdown to plaintext
+            newEntry[locale][fieldName] = marked(fieldValue, { renderer })
+          } else if (fieldType === `Symbol`) {
+            // dont need to reformat short text fields
+            newEntry[locale][fieldName] = fieldValue
+          }
+        })
+      }
     })
 
     return newEntry
