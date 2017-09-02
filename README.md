@@ -204,10 +204,11 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 
 ### MVP - 0.1
 
--   Localised Retrieve, Transform, Index, and Query with default settings
+-   Localised indexing and querying generated from the content model
 
 ### 0.2
 
+- More logging and testing
 - Update index automatically
 
 ### 0.3
