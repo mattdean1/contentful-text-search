@@ -7,9 +7,6 @@ const config = require(`./index-config`)
 
 // TODO: add support for fallback locale codes
 // NOTE: should we use space name instead of ID when creating index name?
-const log = obj => {
-  console.log(JSON.stringify(obj, null, 2))
-}
 
 module.exports = class ContentfulTextSearch {
   constructor(args) {
@@ -32,26 +29,42 @@ module.exports = class ContentfulTextSearch {
   }
 
   async regenerateQuery() {
-    const contentTypesResponse = await this.contentful.client.getContentTypes()
-    const contentTypes = transform.reduceContentTypes(
-      contentTypesResponse.items
-    )
-    this.generatedQuery = config.generateQuery(contentTypes)
-    this.indexer.queryGeneratedSinceLastIndexChange = true
+    try {
+      const contentTypesResponse = await this.contentful.client.getContentTypes()
+      const contentTypes = transform.reduceContentTypes(
+        contentTypesResponse.items
+      )
+      this.generatedQuery = config.generateQuery(contentTypes)
+      this.indexer.queryGeneratedSinceLastIndexChange = true
+    } catch (err) {
+      debug(`Error: failed generating query: %s`, err)
+      throw new Error(err)
+    }
   }
 
   async query(searchTerm, locale) {
-    if (
-      !this.generatedQuery ||
-      !this.indexer.queryGeneratedSinceLastIndexChange
-    ) {
-      await this.regenerateQuery()
+    if (!searchTerm || !locale) {
+      console.log(
+        `Please provide the mandatory parameters searchTerm and locale when querying`
+      )
+      return {}
     }
-    this.generatedQuery.query.bool.must[0].multi_match.query = searchTerm
-    const result = await this.elasticsearch.client.search({
-      index: `contentful_${this.space}_${locale.toLowerCase()}`,
-      body: this.generatedQuery,
-    })
-    log(result)
+    try {
+      if (
+        !this.generatedQuery ||
+        !this.indexer.queryGeneratedSinceLastIndexChange
+      ) {
+        await this.regenerateQuery()
+      }
+      this.generatedQuery.query.bool.must[0].multi_match.query = searchTerm
+      const result = await this.elasticsearch.client.search({
+        index: `contentful_${this.space}_${locale.toLowerCase()}`,
+        body: this.generatedQuery,
+      })
+      return result
+    } catch (err) {
+      debug(`Error querying: %s`, err)
+      throw new Error(err)
+    }
   }
 }

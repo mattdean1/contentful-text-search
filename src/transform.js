@@ -4,6 +4,9 @@ const PlainTextRenderer = require(`marked-plaintext`)
 
 const renderer = new PlainTextRenderer()
 
+/*
+  Generate a payload for uploading entries to elasticsearch in bulk
+*/
 const generatePayload = (entries, locale, index) => {
   return {
     index,
@@ -11,12 +14,16 @@ const generatePayload = (entries, locale, index) => {
   }
 }
 
+/*
+  Format entries so they're ready to be uploaded to elasticsearch (call this before generating payload)
+*/
 const reformatEntries = (entries, contentTypes, locales) =>
   formatEntries(reduceEntries(entries), contentTypes, locales)
 
 /*
   Convert entries to ES bulk format
   @param {array} entries - an array of formatted entries
+  @param {string} locale - a locale code e.g. en-US
 */
 const mapEntriesToES = (entries, locale) => {
   let body = []
@@ -38,17 +45,18 @@ const mapEntriesToES = (entries, locale) => {
 
 /*
   Reformat fields if necessary and bring fields to top level of object
-  @param {array} entries - an array of reduced entries
+  @param {array} entries        - an array of reduced entries
+  @param {object} contentTypes  - the formatted content types for this space
+  @param {array} locales        - the locales for this space
 */
 const formatEntries = (entries, contentTypes, locales) => {
   const newEntries = entries.map(entry => {
-    // setup data
     const newEntry = { id: entry.id, type: entry.type }
     locales.forEach(localeObj => {
       const locale = localeObj.code
       const fields = entry[locale]
       if (fields) {
-        // continue if this field contains content for this locale
+        // check if this field contains content for this locale
         const { title: ctTitle, fields: ctFields } = contentTypes[entry.type]
         newEntry[locale] = {}
 
@@ -72,7 +80,7 @@ const formatEntries = (entries, contentTypes, locales) => {
     return newEntry
   })
 
-  // remove entries with no text fields
+  // remove entries with no fields
   return newEntries.filter(entry => Object.keys(entry).length > 2)
 }
 
@@ -99,28 +107,22 @@ to:
 */
 const reduceEntries = entries =>
   entries.map(entry => {
-    try {
-      const newEntry = { id: entry.sys.id, type: entry.sys.contentType.sys.id }
-      const locales = Object.keys(entry.fields)
-      locales.forEach(localeName => {
-        newEntry[localeName] = {}
-        const localisedFields = entry.fields[localeName]
-        Object.keys(localisedFields).forEach(fieldName => {
-          if (!Array.isArray(localisedFields[fieldName])) {
-            newEntry[localeName][fieldName] = localisedFields[fieldName]
-          }
-        })
+    const newEntry = { id: entry.sys.id, type: entry.sys.contentType.sys.id }
+    const locales = Object.keys(entry.fields)
+    locales.forEach(localeName => {
+      newEntry[localeName] = {}
+      const localisedFields = entry.fields[localeName]
+      Object.keys(localisedFields).forEach(fieldName => {
+        if (!Array.isArray(localisedFields[fieldName])) {
+          newEntry[localeName][fieldName] = localisedFields[fieldName]
+        }
       })
-      return newEntry
-    } catch (err) {
-      debug(`Error reducing entries: %s`, err)
-      debug(`Entry: %O`, entry)
-      return {}
-    }
+    })
+    return newEntry
   })
 
 /*
-Strip contentful content types down to the barebones info
+Strip contentful content types down to the barebones info and convert to an object
 @param {array} contentTypes - an array of content types
 */
 const reduceContentTypes = contentTypes => {
@@ -150,7 +152,7 @@ const reduceArrayToObj = (accumulator, obj) => {
   delete accumulator[obj.name].name
   return accumulator
 }
-// Contentful entry title is always mapped to a field called 'title' (unless there is a field named 'title')
+// Ensure contentful entry title is always mapped to a field called 'title' (unless there is a field named 'title')
 const getTitleField = (fields, ctTitle) => {
   if (Object.keys(fields).includes(`title`)) {
     return `title`

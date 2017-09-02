@@ -2,10 +2,6 @@ const debug = require(`debug`)(`contentful-text-search:indexer`)
 const transform = require(`./transform`)
 const config = require(`./index-config`)
 
-const log = obj => {
-  console.log(JSON.stringify(obj, null, 2))
-}
-
 module.exports = class Indexer {
   constructor(space, contentfulClient, elasticsearchClient) {
     this.space = space
@@ -14,14 +10,12 @@ module.exports = class Indexer {
     this.queryGeneratedSinceLastIndexChange = false
   }
 
-  // delete and recreate all related indices, and reindex the content
+  /*
+    Delete and recreate an index for each locale in the space, and index the content into these indices.
+  */
   async fullReindex() {
     try {
-      const {
-        entries,
-        contentTypes,
-        locales,
-      } = await this.getAndTransformData()
+      const { entries, contentTypes, locales } = await this.getFormattedData()
       // recreate an index for each locale and upload entries into it
       const recreateIndicesAndUploadEntries = locales.map(async localeObj => {
         const locale = localeObj.code
@@ -32,14 +26,17 @@ module.exports = class Indexer {
       })
       await Promise.all(recreateIndicesAndUploadEntries)
     } catch (err) {
-      console.log(err)
+      debug(`Error in fullReindex: %s`, err)
+      throw new Error(err)
     }
   }
 
-  // clear all content from the indices then re-add it
+  /*
+    Clear the indices and reindex all the content from Contentful
+  */
   async reindexContent() {
     try {
-      const { entries, locales } = await this.getAndTransformData()
+      const { entries, locales } = await this.getFormattedData()
       // upload entries into a different index for each locale
       const clearIndicesAndUploadEntries = locales.map(async localeObj => {
         const locale = localeObj.code
@@ -49,28 +46,33 @@ module.exports = class Indexer {
       })
       await Promise.all(clearIndicesAndUploadEntries)
     } catch (err) {
-      console.log(err)
+      debug(`Error in reindexContent: %s`, err)
+      throw new Error(err)
     }
   }
 
-  // delete all indices related to a contentful space
+  /*
+    Delete all indices related to a contentful space
+  */
   async deleteAllIndices() {
     // TODO: delete contentful_space_* in case a locale is no longer in that space
     const { locales } = await this.contentful.client.getSpace()
     const deleteIndices = locales.map(async locale => {
+      const index = `contentful_${this.space}_${locale.code.toLowerCase()}`
       try {
         await this.elasticsearch.client.indices.delete({
-          index: `contentful_${this.space}_${locale.code.toLowerCase()}`,
+          index,
         })
       } catch (err) {
-        // catch in case the index doesn't exist
+        // catch but don't throw in case the index doesn't exist
+        debug(`Could not delete index %s`, index)
       }
     })
     await Promise.all(deleteIndices)
   }
 
-  // Retrieve data from contentful
-  async getAndTransformData() {
+  // Retrieve data from contentful and reformat it
+  async getFormattedData() {
     try {
       const resolvedEntries = await this.contentful.getResolvedEntries()
       const contentTypesResponse = await this.contentful.client.getContentTypes()
@@ -83,13 +85,14 @@ module.exports = class Indexer {
         contentTypes,
         locales
       )
-
       return { entries, locales, contentTypes }
     } catch (err) {
-      console.log(err)
+      debug(`Error getting formatted data: %s`, err)
+      throw new Error(err)
     }
   }
 
+  // Upload entries into a given index
   async indexContent(entries, locale, index) {
     try {
       const payload = transform.generatePayload(entries, locale, index)
@@ -97,6 +100,7 @@ module.exports = class Indexer {
         await this.elasticsearch.client.bulk(payload)
       }
     } catch (err) {
+      // don't throw since we should continue indexing for other locales
       debug(`Could not index entries for ${locale}`)
     }
   }

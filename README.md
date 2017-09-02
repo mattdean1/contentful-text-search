@@ -104,10 +104,10 @@ search.indexer.deleteAllIndices() // returns a promise
 
 ### Main query
 
-Queries the Elasticsearch index and get back search results as JSON ordered by relevance, with highlights showing where your search term appeared in the result.
+Queries the Elasticsearch index and get back search results as JSON ordered by relevance, with highlights showing where your search term appeared in the result. Both parameters are mandatory.
 
 ```javascript
-search.query(`searchTerm`, `localeCode`) // returns a promise containing the results and highlights
+search.query('searchTerm', 'localeCode') // returns a promise containing the results and highlights
 ```
 
 ##  Logging
