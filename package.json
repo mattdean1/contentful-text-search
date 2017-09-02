@@ -30,7 +30,7 @@
   "dependencies": {
     "bluebird": "^3.5.0",
     "check-env": "^1.3.0",
-    "contentful-sync-redis": "^0.3.6",
+    "contentful-sync-redis": "^0.4.0",
     "debug": "^3.0.1",
     "dotenv": "^4.0.0",
     "elasticsearch": "^13.3.1",

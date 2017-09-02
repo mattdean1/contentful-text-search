@@ -17,4 +17,4 @@ const cts = new ContentfulTextSearch({
   elasticLogLevel: `trace`,
 })
 
-cts.fullReindex()
+cts.indexer.fullReindex()
