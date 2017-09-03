@@ -1,39 +1,55 @@
-const debug = require(`debug`)(`contentul-text-search:update`)
-const tunnel = require(`contentful-webhook-tunnel`)
+const debug = require(`debug`)(`contentful-text-search:update`)
+const webhookTunnel = require(`contentful-webhook-tunnel`)
+const webhookListener = require(`contentful-webhook-listener`)
 
-module.exports = class Updater {
+module.exports = class Update {
   constructor(space, contentfulHost, indexer) {
+    this.space = space
     this.indexer = indexer
-    const server = tunnel.createServer({
-      spaces: [space],
-    })
 
-    let constructiveActions
-    let destructiveActions = [`archive`, `delete`]
+    this.destructiveActions = [`archive`, `delete`]
     if (contentfulHost && contentfulHost.includes(`preview`)) {
       // we are using the preview API
-      constructiveActions = [`create`, `save`, `unarchive`]
+      this.constructiveActions = [`create`, `save`, `unarchive`]
     } else {
       // we are using the regular API
-      constructiveActions = [`publish`]
-      destructiveActions.push(`unpublish`)
+      this.constructiveActions = [`publish`]
+      this.destructiveActions.push(`unpublish`)
+    }
+  }
+
+  createServer(opts, requestListener) {
+    let server
+    if (process.env.CONTENTFUL_MANAGEMENT_ACCESS_TOKEN) {
+      debug(`Local development or behind proxy, setting up webhook tunnel`)
+      server = webhookTunnel.createServer(
+        {
+          spaces: [this.space],
+        },
+        requestListener
+      )
+    } else {
+      debug(`Setting up webhook listener`)
+      server = webhookListener.createServer(opts, requestListener)
     }
 
-    constructiveActions.forEach(action => {
+    this.constructiveActions.forEach(action => {
+      debug(`Setting up webhook for constructive action ${action}`)
       server.on(action, payload => {
         debug(`Received webhook for ${action} event from Contentful`)
         this.indexer.indexSingleEntry(payload)
       })
     })
 
-    destructiveActions.forEach(action => {
+    this.destructiveActions.forEach(action => {
+      debug(`Setting up webhook for destructive action ${action}`)
       server.on(action, payload => {
         debug(`Received webhook for ${action} event from Contentful`)
         this.indexer.deleteSingleEntry(payload)
       })
     })
 
-    server.listen()
-    console.log(`webhook server listening on port x`)
+    this.server = server
+    return server
   }
 }

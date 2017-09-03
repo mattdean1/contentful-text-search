@@ -26,7 +26,7 @@ module.exports = class ContentfulTextSearch {
       logLevel: args.elasticLogLevel,
     })
     this.indexer = new Indexer(space, this.contentful, this.elasticsearch)
-    this.updater = new Update(space, contentfulHost, this.indexer)
+    this.update = new Update(space, contentfulHost, this.indexer)
     this.generatedQuery = false
   }
 

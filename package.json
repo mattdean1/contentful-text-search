@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "contentful-sync-redis": "^0.4.0",
+    "contentful-webhook-listener": "^1.0.2",
     "contentful-webhook-tunnel": "^1.5.4",
     "debug": "^3.0.1",
     "elasticsearch": "^13.3.1",
