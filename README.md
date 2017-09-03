@@ -110,6 +110,33 @@ Queries the Elasticsearch index and get back search results as JSON ordered by r
 search.query('searchTerm', 'localeCode') // returns a promise containing the results and highlights
 ```
 
+
+
+## Updating
+
+### Webhooks
+
+Uses the [contentful-webhook-listener](https://www.npmjs.com/package/contentful-webhook-listener) package to listen for [webhooks](https://www.contentful.com/developers/docs/concepts/webhooks/). You can start the server like this:
+
+```javascript
+const server = search.update.createServer()
+server.listen(3000)
+```
+
+The `createServer` method returns an extended instance of Node's [http.server](https://nodejs.org/api/http.html#http_http_createserver_requestlistener), so you have all those methods available, and could for example pass in an Express instance as the `requestListener`. The server object is also always available at `search.update.server`.
+
+You can use basic auth with the webhooks like this:
+
+```javascript
+const server = search.update.createServer({ auth: username:password })
+```
+
+You should [set up webhooks in Contentful](https://www.contentful.com/developers/docs/concepts/webhooks/) pointing to the URL of this server, with all events, or at least all events for Entries.
+
+#### Local development
+
+When developing locally, or behind a proxy, this package uses [contentful-webhook-tunnel](https://www.npmjs.com/package/contentful-webhook-tunnel) instead, which automatically sets up the webhook in Contentful, and creates a tunnel through [ngrok](https://ngrok.com/). See the documentation of that package for more details on how to enable this.
+
 ##  Logging
 
 See the [debug module](https://www.npmjs.com/package/debug). Use the package name (`contentful-text-search`) as the string in the environment variable.
@@ -121,7 +148,7 @@ See the [debug module](https://www.npmjs.com/package/debug). Use the package nam
 Use the Contentful Sync API to keep a local copy of our content in Redis - because we need all/most of our content for indexing, Redis should be faster than the Content Delivery API.
 
 
-## 2. Transform - Transform Contentful data ready for indexing.
+## 2. Transform - Transform Contentful data ready for indexing
 
 Here we remap Contentful fields (e.g. dereferencing, de-localising, and stripping out extraneous info), and reformat some data, for example converting markdown to plain text.
 
@@ -131,7 +158,7 @@ Here we remap Contentful fields (e.g. dereferencing, de-localising, and strippin
 -   Long text fields have their formatting stripped in case they are markdown. (Using [marked-plaintext](https://github.com/etler/marked-plaintext))
 
 
-## 3. Index - Upload our transformed data to Elasticsearch via the bulk endpoint.
+## 3. Index - Upload our transformed data to Elasticsearch via the bulk endpoint
 
 At this step the transformed data is passed through our analysis chain.
 
@@ -155,29 +182,28 @@ Send a string and get back search results as JSON ordered by relevance
 
 #### Highlighting
 
-Also get back highlighted text snippets with your search results, showing where your query appears in results.
+Also get back [highlighted text snippets](https://www.elastic.co/guide/en/elasticsearch/guide/current/highlighting-intro.html) with your search results, showing where your query appears in results.
 
 ##### Default highlighting:
 
--   FVH for speed on partial and localised long text
--   Regular on partial short text
-
-TODO: Explore Universal highlighter in latest versions of ES
+-   [FVH](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html#fast-vector-highlighter) for speed on long text fields with support for localisation and partial word matches
+-   [Default highlighting](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html#plain-highlighter) on short text fields with support for partial word matches
 
 
-## 5. Update - Automatically keep the index up to date with the latest content.
+## 5. Update - Automatically keep the index up to date with the latest content
 
-We re-index all our content regularly via a cron job, and keep the index up to date via Contentful webhooks in between.
+We keep the index up to date via Contentful webhooks. You could also perform a complete reindex of the content every so often using a scheduler like [node-cron](https://www.npmjs.com/package/node-cron)
 
 ##### Default updates:
 
--   Cron job runs every 60 mins
--   Webhooks trigger an update when an entry is published, unpublished, or deleted
+-   Remove an entry from the index when it is unpublished, archived, or deleted
+-   Update an entry in the index or add an entry to the index when it is published
 
 
+##### Updates when using Contentful Preview API
 
-
-
+- Remove an entry when it is archived or deleted
+- Update or add an entry when it is created, saved, or unarchived
 
 
 
@@ -219,10 +245,6 @@ We re-index all our content regularly via a cron job, and keep the index up to d
 
 -   Add autocomplete feature
 -   Add popularity feature
-
-### 1.0
-
-- Support old versions of Node using webpack
 
 
 # Contributions
