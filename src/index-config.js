@@ -15,7 +15,7 @@ const generateIndexMapping = (contentTypes, locale) => {
     mapping[ctName] = {
       properties: {
         id: { type: `keyword` },
-        title: shortTextField,
+        title: shortTextField(),
       },
     }
     const contentType = contentTypes[ctName]
@@ -67,15 +67,9 @@ exports.generateQuery = contentTypes => {
       fields: highlightedFields,
     },
     query: {
-      bool: {
-        must: [
-          {
-            multi_match: {
-              type: `best_fields`,
-              fields,
-            },
-          },
-        ],
+      multi_match: {
+        type: `best_fields`,
+        fields,
       },
     },
   }

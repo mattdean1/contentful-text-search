@@ -72,9 +72,14 @@ module.exports = class Indexer {
   }
 
   // Retrieve data from contentful and reformat it
-  async getFormattedData() {
+  async getFormattedData(rawEntries) {
     try {
-      const resolvedEntries = await this.contentful.getResolvedEntries()
+      let resolvedEntries
+      if (rawEntries) {
+        resolvedEntries = await this.contentful.resolveReferences(rawEntries)
+      } else {
+        resolvedEntries = await this.contentful.getResolvedEntries()
+      }
       const contentTypesResponse = await this.contentful.client.getContentTypes()
       const { locales } = await this.contentful.client.getSpace()
       const contentTypes = transform.reduceContentTypes(
@@ -102,6 +107,47 @@ module.exports = class Indexer {
     } catch (err) {
       // don't throw since we should continue indexing for other locales
       debug(`Could not index entries for ${locale}`)
+    }
+  }
+
+  async indexSingleEntry(entry) {
+    try {
+      const { entries, locales } = await this.getFormattedData([entry])
+      // index an entry for each locale
+      const indexLocalisedEntries = locales.map(async localeObj => {
+        const locale = localeObj.code
+        const index = `contentful_${this.space}_${locale.toLowerCase()}`
+        await this.indexContent(entries, locale, index)
+      })
+      await Promise.all(indexLocalisedEntries)
+    } catch (err) {
+      debug(`Error in indexSingleEntry: %s`, err)
+      throw new Error(err)
+    }
+  }
+
+  async deleteSingleEntry(entry) {
+    try {
+      const { locales } = await this.contentful.client.getSpace()
+      // delete the entry for each locale
+      const deleteLocalisedEntries = locales.map(async localeObj => {
+        const locale = localeObj.code
+        const index = `contentful_${this.space}_${locale.toLowerCase()}`
+        try {
+          await this.elasticsearch.client.delete({
+            index,
+            type: entry.sys.contentType.sys.id,
+            id: entry.sys.id,
+          })
+        } catch (err) {
+          // don't throw error because the entry may not exist
+          debug(`Failed to delete entry for locale ${locale}`)
+        }
+      })
+      await Promise.all(deleteLocalisedEntries)
+    } catch (err) {
+      debug(`Error in deleteSingleEntry: %s`, err)
+      throw new Error(err)
     }
   }
 }

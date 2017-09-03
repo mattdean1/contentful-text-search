@@ -2,6 +2,7 @@ const debug = require(`debug`)(`contentful-text-search`)
 const ContentfulSyncRedis = require(`contentful-sync-redis`)
 const ElasticsearchClient = require(`./elasticsearch-client`)
 const Indexer = require(`./indexer`)
+const Update = require(`./update`)
 const transform = require(`./transform`)
 const config = require(`./index-config`)
 
@@ -25,6 +26,7 @@ module.exports = class ContentfulTextSearch {
       logLevel: args.elasticLogLevel,
     })
     this.indexer = new Indexer(space, this.contentful, this.elasticsearch)
+    this.updater = new Update(space, contentfulHost, this.indexer)
     this.generatedQuery = false
   }
 
@@ -56,7 +58,7 @@ module.exports = class ContentfulTextSearch {
       ) {
         await this.regenerateQuery()
       }
-      this.generatedQuery.query.bool.must[0].multi_match.query = searchTerm
+      this.generatedQuery.query.multi_match.query = searchTerm
       const result = await this.elasticsearch.client.search({
         index: `contentful_${this.space}_${locale.toLowerCase()}`,
         body: this.generatedQuery,
