@@ -1,6 +1,6 @@
 {
   "name": "contentful-text-search",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Powerful, configurable, and extensible text search for your content",
   "main": "src/main.js",
   "scripts": {
