@@ -230,21 +230,21 @@ We keep the index up to date via Contentful webhooks. You could also perform a c
 
 ### MVP - 0.1
 
--   Localised indexing and querying generated from the content model
+- [x]   Localised indexing and querying generated from the content model
 
 ### 0.2
 
-- Update index automatically
+- [x]  Update index automatically
 
-### 0.3
+### 1.0
 
--   Add configuration options and extensibility as detailed in the Setup section
--   Add batching via Redis, to speed things up when there are many entries
+- [ ]    Add configuration options
 
-### 0.4
+### 1.x
 
--   Add autocomplete feature
--   Add popularity feature
+- [ ]   Add extensibility options / plugin system
+- [ ]   Add autocomplete feature
+- [ ]   Add popularity feature
 
 
 # Contributions
